@@ -1,4 +1,4 @@
-package client_gen
+package client
 
 import (
 	"context"
@@ -90,7 +90,7 @@ func SetImpersonationOnConfig(ctx context.Context, client client.Client, config 
 	var username string
 	namespace := authInfo.Namespace
 
-	// TODO(somtochiama): error out if both user and kubeconfig is set?
+	// TODO(somtochiama): error out if both user and serviceaccount is set?
 
 	if authInfo.ServiceAccount != "" {
 		if tokenImp {
