@@ -23,7 +23,7 @@ type AuthInfo struct {
 	Namespace      string
 }
 
-func getServiceAccountToken(ctx context.Context, client client.Client, info AuthInfo) (string, error) {
+func GetServiceAccountToken(ctx context.Context, client client.Client, info AuthInfo) (string, error) {
 	namespacedName := types.NamespacedName{
 		Namespace: info.Namespace,
 		Name:      info.ServiceAccount,
@@ -94,7 +94,7 @@ func SetImpersonationOnConfig(ctx context.Context, client client.Client, config 
 
 	if authInfo.ServiceAccount != "" {
 		if tokenImp {
-			token, err := getServiceAccountToken(ctx, client, authInfo)
+			token, err := GetServiceAccountToken(ctx, client, authInfo)
 			if err != nil {
 				return nil, err
 			}
