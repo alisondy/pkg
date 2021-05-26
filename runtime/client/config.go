@@ -91,9 +91,8 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 	namespace := impConfig.Namespace
 
 	// TODO(somtochiama): error out if both user and serviceaccount is set?
-
-	if impConfig.ServiceAccount != "" {
-		if tokenImp {
+	if tokenImp {
+		if impConfig.ServiceAccount != "" {
 			token, err := GetServiceAccountToken(ctx, client, impConfig)
 			if err != nil {
 				return nil, err
@@ -104,6 +103,10 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 			return config, nil
 		}
 
+		return config, nil
+	}
+
+	if impConfig.ServiceAccount != "" {
 		username = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, impConfig.ServiceAccount)
 	}
 
