@@ -16,17 +16,17 @@ type KubeConfig struct {
 	SecretRef meta.LocalObjectReference
 }
 
-type AuthInfo struct {
+type ImpersonationConfig struct {
 	ServiceAccount string
 	Username       string
 	KubeConfig     *KubeConfig
 	Namespace      string
 }
 
-func GetServiceAccountToken(ctx context.Context, client client.Client, info AuthInfo) (string, error) {
+func GetServiceAccountToken(ctx context.Context, client client.Client, impConfig ImpersonationConfig) (string, error) {
 	namespacedName := types.NamespacedName{
-		Namespace: info.Namespace,
-		Name:      info.ServiceAccount,
+		Namespace: impConfig.Namespace,
+		Name:      impConfig.ServiceAccount,
 	}
 
 	var serviceAccount corev1.ServiceAccount
@@ -36,8 +36,8 @@ func GetServiceAccountToken(ctx context.Context, client client.Client, info Auth
 	}
 
 	secretName := types.NamespacedName{
-		Namespace: info.Namespace,
-		Name:      info.ServiceAccount,
+		Namespace: impConfig.Namespace,
+		Name:      impConfig.ServiceAccount,
 	}
 
 	for _, secret := range serviceAccount.Secrets {
@@ -63,7 +63,7 @@ func GetServiceAccountToken(ctx context.Context, client client.Client, info Auth
 	return token, nil
 }
 
-func getImpersonatedConfig(config *rest.Config, username string, namespace string) *rest.Config {
+func GetImpersonationConfig(config *rest.Config, username string, namespace string) *rest.Config {
 	config.Impersonate = rest.ImpersonationConfig{
 		UserName: username,
 		Groups:   []string{"flux:users", "flux:users:" + namespace},
@@ -72,7 +72,7 @@ func getImpersonatedConfig(config *rest.Config, username string, namespace strin
 	return config
 }
 
-func GetKubeConfig(ctx context.Context, client client.Client, secretName types.NamespacedName) ([]byte, error) {
+func GetKubeConfigFromSecret(ctx context.Context, client client.Client, secretName types.NamespacedName) ([]byte, error) {
 	var secret corev1.Secret
 	if err := client.Get(ctx, secretName, &secret); err != nil {
 		return nil, fmt.Errorf("unable to read KubeConfig secret '%s' error: %w", secretName.String(), err)
@@ -86,15 +86,15 @@ func GetKubeConfig(ctx context.Context, client client.Client, secretName types.N
 	return kubeConfig, nil
 }
 
-func SetImpersonationOnConfig(ctx context.Context, client client.Client, config *rest.Config, authInfo AuthInfo, tokenImp bool) (*rest.Config, error) {
+func GetConfigForAccount(ctx context.Context, client client.Client, config *rest.Config, impConfig ImpersonationConfig, tokenImp bool) (*rest.Config, error) {
 	var username string
-	namespace := authInfo.Namespace
+	namespace := impConfig.Namespace
 
 	// TODO(somtochiama): error out if both user and serviceaccount is set?
 
-	if authInfo.ServiceAccount != "" {
+	if impConfig.ServiceAccount != "" {
 		if tokenImp {
-			token, err := GetServiceAccountToken(ctx, client, authInfo)
+			token, err := GetServiceAccountToken(ctx, client, impConfig)
 			if err != nil {
 				return nil, err
 			}
@@ -104,11 +104,11 @@ func SetImpersonationOnConfig(ctx context.Context, client client.Client, config 
 			return config, nil
 		}
 
-		username = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, authInfo.ServiceAccount)
+		username = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, impConfig.ServiceAccount)
 	}
 
-	if authInfo.Username != "" {
-		username = fmt.Sprintf("flux:user:%s:%s", namespace, authInfo.Username)
+	if impConfig.Username != "" {
+		username = fmt.Sprintf("flux:user:%s:%s", namespace, impConfig.Username)
 	}
 
 	// Sets default username if both service account and user name is unset
@@ -116,5 +116,5 @@ func SetImpersonationOnConfig(ctx context.Context, client client.Client, config 
 		username = fmt.Sprintf("flux:user:%s:%s", namespace, "reconciler")
 	}
 
-	return getImpersonatedConfig(config, username, namespace), nil
+	return GetImpersonationConfig(config, username, namespace), nil
 }
