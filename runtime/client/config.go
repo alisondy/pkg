@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -17,16 +18,16 @@ type KubeConfig struct {
 }
 
 type ImpersonationConfig struct {
-	ServiceAccount string
-	Username       string
-	KubeConfig     *KubeConfig
-	Namespace      string
+	Name       string
+	Kind       string
+	KubeConfig *KubeConfig
+	Namespace  string
 }
 
 func GetServiceAccountToken(ctx context.Context, client client.Client, impConfig ImpersonationConfig) (string, error) {
 	namespacedName := types.NamespacedName{
 		Namespace: impConfig.Namespace,
-		Name:      impConfig.ServiceAccount,
+		Name:      impConfig.Name,
 	}
 
 	var serviceAccount corev1.ServiceAccount
@@ -37,7 +38,7 @@ func GetServiceAccountToken(ctx context.Context, client client.Client, impConfig
 
 	secretName := types.NamespacedName{
 		Namespace: impConfig.Namespace,
-		Name:      impConfig.ServiceAccount,
+		Name:      impConfig.Name,
 	}
 
 	for _, secret := range serviceAccount.Secrets {
@@ -86,13 +87,9 @@ func GetKubeConfigFromSecret(ctx context.Context, client client.Client, secretNa
 	return kubeConfig, nil
 }
 
-func GetConfigForAccount(ctx context.Context, client client.Client, config *rest.Config, impConfig ImpersonationConfig, tokenImp bool) (*rest.Config, error) {
-	var username string
-	namespace := impConfig.Namespace
-
-	// TODO(somtochiama): error out if both user and serviceaccount is set?
-	if tokenImp {
-		if impConfig.ServiceAccount != "" {
+func GetConfigForAccount(ctx context.Context, client client.Client, config *rest.Config, impConfig ImpersonationConfig, enableFluxUsers bool) (*rest.Config, error) {
+	if !enableFluxUsers {
+		if impConfig.Kind == "ServiceAccount" {
 			token, err := GetServiceAccountToken(ctx, client, impConfig)
 			if err != nil {
 				return nil, err
@@ -103,15 +100,22 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 			return config, nil
 		}
 
+		if impConfig.Kind == "User" {
+			return nil, errors.New("cannot impersonate user if --enable-flux-users is not set")
+		}
+
 		return config, nil
 	}
 
-	if impConfig.ServiceAccount != "" {
-		username = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, impConfig.ServiceAccount)
+	var username string
+	namespace := impConfig.Namespace
+
+	if impConfig.Kind == "ServiceAccount" {
+		username = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, impConfig.Name)
 	}
 
-	if impConfig.Username != "" {
-		username = fmt.Sprintf("flux:user:%s:%s", namespace, impConfig.Username)
+	if impConfig.Kind == "User" {
+		username = fmt.Sprintf("flux:user:%s:%s", namespace, impConfig.Name)
 	}
 
 	// Sets default username if both service account and user name is unset
