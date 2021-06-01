@@ -18,10 +18,11 @@ type KubeConfig struct {
 }
 
 type ImpersonationConfig struct {
-	Name       string
-	Kind       string
-	KubeConfig *KubeConfig
-	Namespace  string
+	Name           string
+	Kind           string
+	KubeConfig     *KubeConfig
+	Namespace      string
+	EnableFluxUser bool
 }
 
 func GetServiceAccountToken(ctx context.Context, client client.Client, impConfig ImpersonationConfig) (string, error) {
@@ -88,8 +89,8 @@ func GetKubeConfigFromSecret(ctx context.Context, client client.Client, secretNa
 	return kubeConfig, nil
 }
 
-func GetConfigForAccount(ctx context.Context, client client.Client, config *rest.Config, impConfig ImpersonationConfig, enableFluxUsers bool) (*rest.Config, error) {
-	if !enableFluxUsers {
+func GetConfigForAccount(ctx context.Context, client client.Client, config *rest.Config, impConfig ImpersonationConfig) (*rest.Config, error) {
+	if !impConfig.EnableFluxUser {
 		if impConfig.Kind == "ServiceAccount" {
 			token, err := GetServiceAccountToken(ctx, client, impConfig)
 			if err != nil {
@@ -113,7 +114,7 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 
 	if impConfig.Kind == "ServiceAccount" {
 		username = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, impConfig.Name)
-		config.Impersonate = rest.ImpersonationConfig{ UserName: username}
+		config.Impersonate = rest.ImpersonationConfig{UserName: username}
 		return config, nil
 	}
 
