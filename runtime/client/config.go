@@ -69,7 +69,6 @@ func GetImpersonationConfig(config *rest.Config, username string, namespace stri
 	config.Impersonate = rest.ImpersonationConfig{
 		UserName: username,
 		Groups:   []string{"flux:users", "flux:users:" + namespace},
-		//Groups:   []string{"flux:users"},
 	}
 
 	return config
