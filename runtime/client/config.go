@@ -68,6 +68,7 @@ func GetImpersonationConfig(config *rest.Config, username string, namespace stri
 	config.Impersonate = rest.ImpersonationConfig{
 		UserName: username,
 		Groups:   []string{"flux:users", "flux:users:" + namespace},
+		//Groups:   []string{"flux:users"},
 	}
 
 	return config
@@ -112,6 +113,8 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 
 	if impConfig.Kind == "ServiceAccount" {
 		username = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, impConfig.Name)
+		config.Impersonate = rest.ImpersonationConfig{ UserName: username}
+		return config, nil
 	}
 
 	if impConfig.Kind == "User" {
