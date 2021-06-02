@@ -89,7 +89,7 @@ func GetKubeConfigFromSecret(ctx context.Context, client client.Client, secretNa
 }
 
 func GetConfigForAccount(ctx context.Context, client client.Client, config *rest.Config, impConfig ImpersonationConfig) (*rest.Config, error) {
-	if !impConfig.EnableFluxUser {
+	if !impConfig.Enabled {
 		if impConfig.Kind == "ServiceAccount" {
 			token, err := GetServiceAccountToken(ctx, client, impConfig)
 			if err != nil {
