@@ -13,6 +13,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	UserType           string = "User"
+	ServiceAccountType string = "ServiceAccount"
+)
+
 type KubeConfig struct {
 	SecretRef meta.LocalObjectReference
 }
@@ -90,7 +95,7 @@ func GetKubeConfigFromSecret(ctx context.Context, client client.Client, secretNa
 
 func GetConfigForAccount(ctx context.Context, client client.Client, config *rest.Config, impConfig ImpersonationConfig) (*rest.Config, error) {
 	if !impConfig.Enabled {
-		if impConfig.Kind == "ServiceAccount" {
+		if impConfig.Kind == ServiceAccountType {
 			token, err := GetServiceAccountToken(ctx, client, impConfig)
 			if err != nil {
 				return nil, err
@@ -101,7 +106,7 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 			return config, nil
 		}
 
-		if impConfig.Kind == "User" {
+		if impConfig.Kind == UserType {
 			return nil, errors.New("cannot impersonate user if --enable-flux-users is not set")
 		}
 
@@ -111,13 +116,13 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 	var username string
 	namespace := impConfig.Namespace
 
-	if impConfig.Kind == "ServiceAccount" {
+	if impConfig.Kind == ServiceAccountType {
 		username = fmt.Sprintf("system:serviceaccount:%s:%s", namespace, impConfig.Name)
 		config.Impersonate = rest.ImpersonationConfig{UserName: username}
 		return config, nil
 	}
 
-	if impConfig.Kind == "User" {
+	if impConfig.Kind == UserType {
 		username = fmt.Sprintf("flux:user:%s:%s", namespace, impConfig.Name)
 	}
 
