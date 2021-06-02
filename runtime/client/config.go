@@ -18,11 +18,11 @@ type KubeConfig struct {
 }
 
 type ImpersonationConfig struct {
-	Name           string
-	Kind           string
-	KubeConfig     *KubeConfig
-	Namespace      string
-	EnableFluxUser bool
+	Name       string
+	Kind       string
+	KubeConfig *KubeConfig
+	Namespace  string
+	Enabled    bool
 }
 
 func GetServiceAccountToken(ctx context.Context, client client.Client, impConfig ImpersonationConfig) (string, error) {
