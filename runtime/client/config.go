@@ -73,7 +73,7 @@ func GetServiceAccountToken(ctx context.Context, client client.Client, impConfig
 func GetImpersonationConfig(config *rest.Config, username string, namespace string) *rest.Config {
 	config.Impersonate = rest.ImpersonationConfig{
 		UserName: username,
-		Groups:   []string{"flux:users", "flux:users:" + namespace},
+		Groups:   []string{"flux:users", "system:authenticated", "flux:users:" + namespace},
 	}
 
 	return config
