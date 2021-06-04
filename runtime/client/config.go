@@ -129,7 +129,7 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 
 	// Sets default username if both service account and user name is unset
 	if username == "" {
-		username = fmt.Sprintf("flux:user:%s:%s", namespace, "reconciler")
+		username = fmt.Sprintf("flux:user:%s:%s", namespace, DefaultUser)
 	}
 
 	return GetImpersonationConfig(config, username, namespace), nil
