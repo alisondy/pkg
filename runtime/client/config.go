@@ -16,6 +16,7 @@ import (
 const (
 	UserType           string = "User"
 	ServiceAccountType string = "ServiceAccount"
+	DefaultUser               = "reconciler"
 )
 
 type KubeConfig struct {
@@ -107,7 +108,7 @@ func GetConfigForAccount(ctx context.Context, client client.Client, config *rest
 		}
 
 		if impConfig.Kind == UserType {
-			return nil, errors.New("cannot impersonate user if --enable-flux-users is not set")
+			return nil, errors.New("cannot impersonate user if --user-impersonation is not set")
 		}
 
 		return config, nil
